@@ -1,114 +1,105 @@
-# HiFiBerryOS Next Generation
+# HiFiBerry OS (Next Generation)
 
-The next-generation HiFiBerryOS is a complete rewrite, now based on a standard Debian distribution. It uses Debian packages to install tools, audio players, and the user interface, making it more flexible and modular.
+HiFiBerry OS is a Debian package-based audio platform for Raspberry Pi with HiFiBerry HATs.
+This repository contains installer scripts, packaging for core services, and player packages.
 
-## Architecture
+## Highlights
 
-The system is composed of several core components:
+- PipeWire-based audio stack
+- AudioControl-backed WebUI and player orchestration
+- Package-driven installation (`hbos-minimal`, `hbos-full`, `hbos-test`)
+- Per-user `systemd` services for players
 
-### PipeWire
+## Supported Platform
 
-We use **PipeWire** as a system daemon to manage concurrent access to the sound card by multiple players.
+- Raspberry Pi 3/4/5 (64-bit)
+- Debian 13 (Trixie) target
+- Debian 12 (Bookworm) can be upgraded using `upgrade-to-trixie`
 
-### AudioControl
+## Quick Install
 
-[AudioControl](https://github.com/hifiberry/acr) is our central control service. It manages audio routing and integrates with player backends and the web user interface.
+### Option A: Clone and run the installer (recommended)
 
-### WebUI
-
-The WebUI is served directly by AudioControl, which includes a built-in web server.
-
-### Players
-
-Audio players are provided as standalone packages. You only need to install the ones you intend to use. Available players include:
-
-- [**MPD**](https://www.musicpd.org/) – plays local music files (MP3, WAV, FLAC, etc.)
-- [**Librespot**](https://github.com/librespot-org/librespot) – provides Spotify Connect support
-- [**Raat**](https://roonlabs.com/) – Roon audio playback (via the Roon Bridge)
-- [**Shairplay**](https://github.com/juhovh/shairplay) – AirPlay 2 implementation
-- [**Squeezelite**](https://github.com/ralph-irving/squeezelite) – Logitech Media Server client
-
-More players may be added in the future. You can also package and install your own player. However, to be visible and controllable through the WebUI, a player-specific module must be implemented for AudioControl.
-
-## Hardware Recommendations
-
-### Minimum Requirements
-
-HiFiBerryOS runs on any 64-bit Raspberry Pi (Pi 3, Pi 4, or Pi 5) with a compatible HiFiBerry HAT. The system requires:
-
-- **RAM**: 1GB minimum (2GB+ recommended for better performance)
-- **Storage**: 8GB microSD card minimum (16GB+ recommended)
-- **Network**: Ethernet or Wi-Fi connectivity
-
-### Performance Considerations
-
-**For streaming applications only:**
-- Any Pi 3, Pi 4, or Pi 5 will provide excellent performance
-- Standard microSD card storage is sufficient
-- Wi-Fi connectivity works well for most use cases
-
-**For large local music libraries (1000+ albums):**
-- **Pi 5 with SSD highly recommended** for optimal performance
-- SSD storage significantly improves library scanning and indexing
-- Ethernet connection preferred for network-attached storage (NAS) access
-- Consider Pi 4 with 4GB+ RAM as a cost-effective alternative
-
-### Storage Options
-
-- **microSD Card**: Suitable for streaming and small local libraries
-- **USB 3.0 SSD**: Best performance for large libraries and frequent database operations
-- **Network Storage**: NAS or network shares work well with sufficient network bandwidth
-
-### HiFiBerry HAT Compatibility
-
-HiFiBerryOS supports all current HiFiBerry audio HATs. No sound cards from other manufacturers are supported.
-
-## Installation
-
-To install HiFiBerryOS, start with [**Raspberry Pi OS Lite**](https://www.raspberrypi.com/software/operating-systems/#raspberry-pi-os-legacy) and add the required packages.
-
-### Add repository
-
-Start adding the HiFiBerry debian repository:
-```
-curl -Ls https://tinyurl.com/hbosrepo | bash
+```bash
+git clone https://github.com/hifiberry/hifiberry-os.git
+cd hifiberry-os
+./install-all
 ```
 
-### Package installation
+`install-all`:
+- validates Debian version
+- adds the HiFiBerry APT repository
+- installs `hbos-minimal`
+- configures user/session defaults for player services
 
-The install-all script will install the minimal base packages:
+### Option B: Add repository only
 
+```bash
+./addrepo
 ```
-curl -Ls https://raw.githubusercontent.com/hifiberry/hifiberry-os/refs/heads/hbosng/install-all | bash
-```
 
-### Install all players
+Then install packages manually, for example:
 
-The minimal image only uses 
-
-Install a full or minimal set of packages. The full set included all players, while the minimal comes only with mpd. This allows you to install only the players you really need.
-
-```
+```bash
+sudo apt update
 sudo apt install -y hbos-minimal
 ```
-or
+
+## Package Variants
+
+- `hbos-minimal`: core HiFiBerry OS components (PipeWire + MPD + AudioControl + WebUI)
+- `hbos-full`: minimal plus major streaming players (Librespot, Shairport, Squeezelite, RAAT)
+- `hbos-test`: diagnostics-oriented profile with test tooling
+
+For detailed meta-package information, see `packages/hifiberryos/README.md`.
+
+## Upgrade Path (Bookworm -> Trixie)
+
+If you are on Debian 12 (Bookworm), run:
+
+```bash
+./upgrade-to-trixie
 ```
-sudo apt install -y hbos-full
+
+After the upgrade completes and you reboot, run `./install-all`.
+
+## Development: Building Packages
+
+This repository uses Debian packaging with `sbuild`.
+
+### Build one package
+
+```bash
+cd packages/<package-name>
+./build.sh
 ```
 
-### Base configuration
+### Build all packages
 
-```
-sudo config-configtxt --default-config --enable-i2c
-reboot
-sudo config-detect
-reboot
-sudo hifiberry-baseconfig --force
+```bash
+cd packages
+./build-all
 ```
 
-Then reboot
+Force clean rebuild:
 
-## How to use
+```bash
+cd packages
+./build-all --clean
+```
 
-The WebUI is accessible at: http://<device-ip>:80/
+For full build environment guidance, see `packages/build.md`.
 
+## Repository Layout
+
+- `install-all`, `addrepo`, `upgrade-to-trixie`: host install/upgrade scripts
+- `packages/`: package sources, Debian metadata, package build/clean scripts
+- `scripts/`: helper scripts for chroots and cross-compile `sbuild` workflows
+
+## Accessing the UI
+
+The WebUI is available at:
+
+```text
+http://<device-ip>/
+```
