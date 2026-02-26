@@ -21,10 +21,33 @@ if [ "$CURRENT_USER" != "root" ]; then
     fi
 fi
 
-# Sound card detection check
+# Wait for sound card to become available.
+# This avoids a boot-time race where the user service starts before hardware
+# detection is complete and then stays inactive until manually restarted.
+wait_for_soundcard() {
+  local max_attempts=24
+  local sleep_seconds=5
+  local attempt=1
+
+  while [ "$attempt" -le "$max_attempts" ]; do
+    if /usr/bin/config-soundcard --detect >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if [ "$attempt" -lt "$max_attempts" ]; then
+      echo "Sound card not ready yet. Waiting ${sleep_seconds}s (attempt ${attempt}/${max_attempts})..."
+      sleep "$sleep_seconds"
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  return 1
+}
+
 echo "Checking for sound card..."
-if ! /usr/bin/config-soundcard --detect >/dev/null 2>&1; then
-    echo "No sound card detected, not starting shairport-sync"
+if ! wait_for_soundcard; then
+    echo "No sound card detected after 120 seconds, not starting shairport-sync"
     exit 0
 fi
 echo "Sound card detected successfully."
